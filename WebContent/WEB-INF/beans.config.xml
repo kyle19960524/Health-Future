@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!--說明應用程式會使用到annotation組態 -->
+	<context:annotation-config />
+
+	<!--使用annotation組態的類別放在model套件內 -->
+	<context:component-scan base-package="model" />
+		<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true"/>
+		<!-- 新增 proxy-target-class="true"-->
+	
+	<!-- 新增 -->		
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" propagation="REQUIRED"/>
+			<tx:method name="list*" read-only="true" propagation="REQUIRED"/>
+			<tx:method name="find*" read-only="true" propagation="REQUIRED"/>
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="*" propagation="REQUIRED" rollback-for="Exception"/>
+		</tx:attributes>
+	</tx:advice>
+
+
+	<!-- 新增 -->
+	<!-- AOP -->
+	<aop:aspectj-autoproxy/>
+	
+	<!--注意！如果service目录变了，需要改这里的内容，否则会报错-->
+	<aop:config proxy-target-class="true">
+		<aop:advisor pointcut="execution(public * model.*model.*(..))" advice-ref="txAdvice"/>
+	</aop:config>
+		
+		
+	<mvc:annotation-driven />
+	
+
+	<!-- <bean id="sqlserverDataSource"class="org.springframework.jdbc.datasource.DriverManagerDataSource"><property 
+		name="driverClassName"value="com.microsoft.sqlserver.jdbc.SQLServerDriver" 
+		/><property name="url"value="jdbc:sqlserver://localhost:1433;databaseName=KyleTest" 
+		/><property name="username" value="sa" /><property name="password" value="passw0rd" 
+		/></bean> -->
+
+
+
+	<bean class="org.springframework.jndi.JndiObjectFactoryBean" id="sqlserverJndiDataSource">
+		<property value="java:comp/env/connectSQLServerJdbc/OrderService" name="jndiName" />
+	</bean>
+
+	<bean
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" id="sessionFactory">
+		<property name="dataSource" ref="sqlserverJndiDataSource" />
+		<property name="configLocation">
+			<value>classpath:hibernate.cfg.xml</value>
+		</property>
+	</bean>
+
+
+	<bean
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager" id="transactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+</beans>
